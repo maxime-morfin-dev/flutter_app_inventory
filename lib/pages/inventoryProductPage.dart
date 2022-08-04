@@ -7,7 +7,11 @@ import '../models/product.dart';
 import '../utils/addInventoryDialog.dart';
 
 class InventoryProductPage extends StatefulWidget {
-  const InventoryProductPage({Key? key}) : super(key: key);
+  const InventoryProductPage({Key? key, required this.inventory}) : super(key: key);
+
+  final Inventory inventory;
+
+  final Function() onRemove;
 
   @override
   State<InventoryProductPage> createState() => _InventoryProductPageState();
@@ -15,50 +19,24 @@ class InventoryProductPage extends StatefulWidget {
 
 class _InventoryProductPageState extends State<InventoryProductPage> {
 
-  Inventory? inventory;
-  List<Product> productList = [];
+  late Inventory _inventory;
+  List<Product> _productList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _inventory = widget.inventory;
+  }
+
+  @override
+  void didUpdateWidget(covariant InventoryProductPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final args = ModalRoute.of(context)!.settings.arguments as Inventory;
+    _inventory = args;
+  }
 
   @override
   Widget build(BuildContext context) {
-
-    final args = ModalRoute.of(context)!.settings.arguments as Inventory;
-
-    setState(() {
-      inventory = args;
-    });
-
-    void showInventoryDialog() async{
-      final result = await showDialog(context: context, builder: (_){
-        return AlertDialog(
-          content: AddInventoryDialog(inventory?.nom),
-        );
-      });
-
-      if(!mounted) return;
-
-      setState(() {
-        inventory?.nom = result;
-      });
-    }
-
-    void showProductDialog(String? name) async{
-      final result = await showDialog(context: context, builder: (_){
-        return AlertDialog(
-          content: AddProductDialog(name),
-        );
-      });
-
-      if(!mounted) return;
-      if(name != null){
-        final productToModify = inventory?.produits.firstWhere((item) => item.nom == name);
-        setState(() => productToModify!.nom = result);
-      }else{
-        setState(() {
-          inventory?.produits.add(Product(result, 1));
-        });
-      }
-    }
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -79,7 +57,7 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
             child: Center(
               child:
                 Text(
-                  inventory!.nom,
+                  _inventory.nom,
                   style: const TextStyle(
                       fontSize: 40
                   ),
@@ -93,7 +71,7 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
                   padding: const EdgeInsets.all(5),
                   child: FloatingActionButton(
                     backgroundColor: randomMaterialColor(),
-                    onPressed: showInventoryDialog,
+                    onPressed: _showInventoryDialog,
                     child: const Icon(Icons.edit),
                   ),
                 ),
@@ -102,7 +80,7 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
                   child: FloatingActionButton(
                     backgroundColor: randomMaterialColor(),
                     onPressed: (){
-                      Navigator.pop(context, args);
+                      Navigator.pop(context, _inventory);
                     },
                     child: const Icon(Icons.delete),
                   ),
@@ -116,7 +94,7 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
               crossAxisSpacing: 20,
               mainAxisSpacing: 20,
               padding: const EdgeInsets.only(top:20),
-              children: inventory!.produits.map((product) => Card(
+              children: _inventory.produits.map((product) => Card(
                 elevation: 5,
                 shape: Border(
                   top: BorderSide(
@@ -154,11 +132,20 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
                               onPressed:(){
                                 if(product.quantite == 1){
                                   setState(() {
-                                    inventory!.produits.remove(product);
+                                    _inventory.produits.remove(product);
                                   });
                                 }else{
-                                  final productToModify = inventory!.produits.firstWhere((item) => item.nom == product.nom);
-                                  setState(() => productToModify.quantite -= 1);
+                                  setState(() {
+                                    _inventory = _inventory.copyWith(
+                                      produits: [
+                                        for (final item in _inventory.produits) 
+                                          if (item.nom == product.nom) 
+                                            item.copyWith(quantite: item.quantite - 1)
+                                          else 
+                                            item
+                                      ]
+                                    );
+                                  });
                                 }
                               },
                               icon: const Icon(Icons.remove),
@@ -172,7 +159,7 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
                             ),
                             IconButton(
                               onPressed: (){
-                                showProductDialog(product.nom);
+                                _showProductDialog(product.nom);
                               },
                               icon: const Icon(Icons.edit),
                             ),
@@ -190,8 +177,9 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
         width: 50,
         height: 70,
         child:  FloatingActionButton(
+          heroTag: "fbtn1",
           onPressed: (){
-            showProductDialog(null);
+            _showProductDialog(null);
           },
           shape: const ContinuousRectangleBorder(side: BorderSide.none),
           child: const Icon(
@@ -202,4 +190,41 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
     );
   }
+
+
+    void _showInventoryDialog() async{
+      final result = await showDialog<String?>(context: context, builder: (_){
+        return AlertDialog(
+          content: AddInventoryDialog(inventory?.nom),
+        );
+      });
+
+      if (result == null) return;
+
+      setState(() {
+        inventory = inventory?.copyWith(
+          nom: result
+        );
+      });
+    }
+
+    void _showProductDialog(String? name) async{
+      final result = await showDialog<String?>(context: context, builder: (_){
+        return AlertDialog(
+          content: AddProductDialog(name),
+        );
+      });
+
+      if (result == null) return;
+
+      if(name != null){
+        final productToModify = inventory?.produits.firstWhere((item) => item.nom == name);
+        setState(() => productToModify!.nom = result);
+      }else{
+        setState(() {
+          inventory?.produits.add(Product(result, 1));
+        });
+      }
+    }
+
 }

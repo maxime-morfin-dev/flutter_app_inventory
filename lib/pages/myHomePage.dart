@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventaire_flutter_app/models/inventory.dart';
+import 'package:inventaire_flutter_app/pages/inventoryProductPage.dart';
 import 'package:inventaire_flutter_app/utils/addInventoryDialog.dart';
 
 import '../main.dart';
@@ -20,15 +21,21 @@ class _MyHomePage extends State<MyHomePage>  {
 
   void addInventoryData(String name){
     setState(() {
-      inventoryList.add(Inventory(name, []));
+      inventoryList.add(Inventory(nom: name, produits: const []));
     });
   }
 
   Future<void> _navigateAndDisplaySelection(BuildContext context, Inventory inventory) async {
-    final result = await Navigator.pushNamed(
-      context,
-      '/inventoryProducts',
-      arguments: inventory
+    // final result = await Navigator.pushNamed(
+    //   context,
+    //   '/inventoryProducts',
+    //   arguments: inventory
+    // );
+
+    await Navigator.of(context).push<dynamic>(
+      MaterialPageRoute<dynamic>(
+        builder: (context) => InventoryProductPage(inventory: inventory) 
+      )
     );
 
     if(!mounted) return;
@@ -45,13 +52,13 @@ class _MyHomePage extends State<MyHomePage>  {
   Widget build(BuildContext context) {
 
     void showInventoryDialog() async{
-      final result = await showDialog(context: context, builder: (_){
+      final result = await showDialog<String?>(context: context, builder: (_){
         return const AlertDialog(
           content: AddInventoryDialog(null),
         );
       });
 
-      if(!mounted) return;
+      if (result == null) return;
 
       setState(() {
         inventoryList.add(Inventory(result, []));
@@ -143,6 +150,7 @@ class _MyHomePage extends State<MyHomePage>  {
         width: 50,
         height: 70,
         child: FloatingActionButton(
+          heroTag: "fbtn1",
           onPressed: showInventoryDialog,
           shape: const ContinuousRectangleBorder(
               side: BorderSide.none
