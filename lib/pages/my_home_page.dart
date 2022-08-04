@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventaire_flutter_app/models/inventory.dart';
+import 'package:inventaire_flutter_app/pages/inventory_product_page.dart';
 import 'package:inventaire_flutter_app/utils/addInventoryDialog.dart';
 
 import '../main.dart';
@@ -16,47 +17,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePage extends State<MyHomePage>  {
 
-  List<Inventory> inventoryList = [];
-
-  void addInventoryData(String name){
-    setState(() {
-      inventoryList.add(Inventory(name, []));
-    });
-  }
-
-  Future<void> _navigateAndDisplaySelection(BuildContext context, Inventory inventory) async {
-    final result = await Navigator.pushNamed(
-      context,
-      '/inventoryProducts',
-      arguments: inventory
-    );
-
-    if(!mounted) return;
-
-    setState(() {
-      inventoryList.remove(result);
-    });
-  }
-
-
-
+  final List<Inventory> _inventoryList = [];
 
   @override
   Widget build(BuildContext context) {
-
-    void showInventoryDialog() async{
-      final result = await showDialog(context: context, builder: (_){
-        return const AlertDialog(
-          content: AddInventoryDialog(null),
-        );
-      });
-
-      if(!mounted) return;
-
-      setState(() {
-        inventoryList.add(Inventory(result, []));
-      });
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -81,7 +45,7 @@ class _MyHomePage extends State<MyHomePage>  {
          ListView.builder(
            scrollDirection: Axis.vertical,
            shrinkWrap: true,
-           itemCount: inventoryList.length,
+           itemCount: _inventoryList.length,
            itemBuilder: (BuildContext context, int index){
              return Card(
                margin: const EdgeInsets.only(top: 10, bottom: 10),
@@ -94,7 +58,7 @@ class _MyHomePage extends State<MyHomePage>  {
                ),
                child: InkWell(
                  onTap: (){
-                   _navigateAndDisplaySelection(context, inventoryList[index]);
+                   _goToInventoryProductPage(context, _inventoryList[index]);
                  },
                  child: Padding(
                    padding: const EdgeInsets.all(20),
@@ -116,7 +80,7 @@ class _MyHomePage extends State<MyHomePage>  {
                            Padding(
                              padding: const EdgeInsets.all(12),
                              child: Text(
-                              inventoryList[index].nom,
+                              _inventoryList[index].nom,
                                style: const TextStyle(
                                  color: Colors.black87,
                                  fontSize: 20,
@@ -143,7 +107,8 @@ class _MyHomePage extends State<MyHomePage>  {
         width: 50,
         height: 70,
         child: FloatingActionButton(
-          onPressed: showInventoryDialog,
+          heroTag: 'addInventoryActionBtn',
+          onPressed: _showInventoryDialog,
           shape: const ContinuousRectangleBorder(
               side: BorderSide.none
           ),
@@ -154,5 +119,56 @@ class _MyHomePage extends State<MyHomePage>  {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
     );
+  }
+
+  void _addInventoryData(String name){
+    Inventory inventoryToAdd = Inventory(nom: name, produits: const []);
+    setState(() {
+      _inventoryList.add(inventoryToAdd);
+    });
+  }
+
+  void removeInventoryData(Inventory inventory){
+    setState(() {
+      _inventoryList.remove(inventory);
+    });
+  }
+
+  void _majOfInventoryList(Inventory newInventory, Inventory inventory){
+    final index = _inventoryList.indexOf(inventory);
+
+    if(index != -1) {
+      setState(() {
+        _inventoryList[index] = _inventoryList[index].copyWith(
+          nom: newInventory.nom,
+          produits: newInventory.produits
+        );
+      });
+    }
+  }
+
+
+  Future<void> _showInventoryDialog() async{
+    final result = await showDialog<String>(context: context, builder: (_){
+      return const AlertDialog(
+        content: AddInventoryDialog(null),
+      );
+    });
+
+    if(result == null) return;
+
+    _addInventoryData(result);
+  }
+
+  Future<void> _goToInventoryProductPage(BuildContext context, Inventory inventory) async {
+     final result = await Navigator.of(context).push<Inventory>(
+      MaterialPageRoute<Inventory>(
+        builder: (context) => InventoryProductPage(inventory: inventory, onRemove: removeInventoryData)
+      )
+    );
+
+     if(result == null) return;
+
+     _majOfInventoryList(result, inventory);
   }
 }

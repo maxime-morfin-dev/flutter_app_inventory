@@ -1,9 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:inventaire_flutter_app/pages/inventoryProductPage.dart';
+import 'package:inventaire_flutter_app/pages/inventory_product_page.dart';
 
-import 'pages/myHomePage.dart';
+import 'pages/my_home_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,11 +31,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Inventory_flutter_app',
-      initialRoute: '/',
-      routes: {
-        '/' : (context) => const MyHomePage(),
-        '/inventoryProducts' : (context) => const InventoryProductPage(),
-      },
+      home: const MyHomePage(),
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
 
